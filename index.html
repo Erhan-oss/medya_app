@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Betül & Mert ÇELİK</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Story+Script&display=swap" rel="stylesheet">
+<style>
+    .arka{
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+        position: absolute;
+        z-index: -1;
+    }
+    .arka img{
+        width: 100%;
+    }
+    body { font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; flex-direction:column; min-height:100vh; margin:0; padding:10px; }
+    .container {background: rgba(255,255,255,0.7); padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:300px; max-width:350px; text-align:center;}
+    input, button {width:100%; margin:10px 0; padding:10px; border-radius:25px; border:none;}
+    button {background:#7f0096; color:white; cursor:pointer;}
+    button:hover {background:#62006b;}
+    /* Dosya seç butonu */
+    .file-label {display:inline-block; background:#7f0096; color:white; padding:12px;  border-radius:8px; cursor:pointer;}
+    input[type="file"] {display:none;}
+    /* Mikrofon butonu */
+    .mic-btn {background:red; border-radius:50%; width:80px; height:80px; display:flex; justify-content:center; align-items:center; margin:20px auto; position:relative; color:white; font-size:28px; cursor:pointer;}
+    .mic-btn span {pointer-events:none;}
+    audio {margin-top:10px; width:100%; display:none;}
+</style>
+</head>
+<body>
+<div class="arka">
+    <img src="../static/images/Untitled.jpeg" >
+</div>
+<div class="container">
+    <h2 style="font-family: 'Story Script', sans-serif;
+  font-weight: 00;
+  font-style: normal;">HOŞGELDİNİZ</h2>
+
+    <!-- İsim Soyisim -->
+    <input type="text" id="fullname" placeholder="İsim Soyisim" style="text-align: center; " required>
+
+    <!-- Dosya yükleme -->
+    <!-- Dosya seçme ve yükleme alanı -->
+<form id="fileForm" enctype="multipart/form-data" style="display:flex;">
+    <label for="fileInput" class="file-label" style="
+        border-top-left-radius:8px;
+        border-bottom-left-radius:8px;
+        border-top-right-radius:0;
+        border-bottom-right-radius:0;
+        text-align:center;
+        background:#7f0096;
+        color:white;
+        padding:12px;
+        cursor:pointer;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        flex:0 0 auto; /* Sadece içerik kadar geniş */
+        min-width:80px; /* opsiyonel minimum genişlik */
+    ">
+        📂 Dosya Seç
+    </label>
+    <input id="fileInput" type="file" name="files" accept="image/*,video/*,audio/*,.mp3,.wav,.m4a,.ogg" multiple style="display:none;">
+
+    <button type="submit" style="
+        flex:1; /* Kalan alanı kaplar */
+        border-top-left-radius:0;
+        border-bottom-left-radius:0;
+        border-top-right-radius:8px;
+        border-bottom-right-radius:8px;
+        background:#62006b;
+        color:white;
+        cursor:pointer;
+        padding:12px;
+        font-size:16px;
+        margin:0;
+    ">
+        Dosyaları Yükle
+    </button>
+</form>
+
+
+
+    <h3 style="font-family: 'Story Script', sans-serif;
+  font-weight: 00;
+  font-style: normal;">Çok Güzel Dilekleriniz..</h3>
+    <div class="mic-btn" id="micBtn">
+        <span id="micIcon">➤</span>
+    </div>
+    <audio id="player" controls></audio>
+    <button onclick="sendRecording()" id="sendBtn" style="display:none;">Kaydı Yükle</button>
+</div>
+
+<script>
+let mediaRecorder, audioChunks=[], audioBlob, stream, isRecording=false;
+
+// Mikrofon izni sayfa açılır açılmaz
+async function requestMicPermission(){
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio:true }); }
+    catch(err){ console.log("Mikrofon izni reddedildi:", err); }
+}
+requestMicPermission();
+
+// Kayıt başlat/durdur
+const micBtn = document.getElementById("micBtn");
+const micIcon = document.getElementById("micIcon");
+const indicator = document.getElementById("indicator");
+const player = document.getElementById("player");
+const sendBtn = document.getElementById("sendBtn");
+
+micBtn.addEventListener("click", toggleRecording);
+
+async function toggleRecording(){
+    const fullname = document.getElementById("fullname").value.trim();
+    if(!fullname){ alert("Lütfen önce isim ve soyisim girin!"); return; }
+
+    if(!isRecording){
+        if(!stream){
+            try{ stream = await navigator.mediaDevices.getUserMedia({ audio:true }); }
+            catch(err){ alert("Mikrofon izni gerekiyor!"); return; }
+        }
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.start();
+        isRecording=true;
+
+        // Kayıt başladı -> 🎙 sembolünü kareye çevir
+        micIcon.textContent = "■";
+        micIcon.style.fontSize = "40px";
+        player.style.display="none";
+        sendBtn.style.display="none";
+
+    } else {
+        mediaRecorder.stop();
+        mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, {type:'audio/webm'});
+            player.src = URL.createObjectURL(audioBlob);
+            player.style.display="block";
+            sendBtn.style.display="block";
+        };
+        isRecording=false;
+
+        // Kayıt bitti -> sembolü eski haline getir
+        micIcon.textContent = "🎙";
+        micIcon.style.fontSize = "28px";
+    }
+}
+
+// Ses kaydını yükle
+function sendRecording(){
+    const fullname = document.getElementById("fullname").value.trim();
+    if(!fullname){ alert("Lütfen önce isim ve soyisim girin!"); return; }
+    const formData = new FormData();
+    formData.append("files", audioBlob, fullname + "_seskaydi.webm");
+    fetch("/upload", {method:"POST", body: formData})
+        .then(res=>res.text())
+        .then(data=>alert(data))
+        .catch(err=>alert("Hata: "+err));
+}
+
+// Dosya yüklemede isim kontrolü
+document.getElementById("fileForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const fullname = document.getElementById("fullname").value.trim();
+    if(!fullname){ alert("Lütfen önce isim ve soyisim girin!"); return; }
+    const input = document.getElementById("fileInput");
+    if(input.files.length===0){ alert("Dosya seçin"); return; }
+    const formData = new FormData();
+    for(let i=0;i<input.files.length;i++){
+        const file = input.files[i];
+        const newName = fullname + "_" + file.name;
+        formData.append("files", file, newName);
+    }
+    fetch("/upload",{method:"POST", body:formData})
+        .then(res=>res.text())
+        .then(data=>alert(data))
+        .catch(err=>alert("Hata: "+err));
+});
+</script>
+
+</body>
+</html>
